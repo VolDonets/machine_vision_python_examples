@@ -88,7 +88,7 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
 @tf.function
 def train_step(x, y):
-    lr = 0.0004
+    lr = 0.0003
     with tf.GradientTape() as tape:
         pred = model(x)
         loss = loss_object(y, pred)
@@ -130,7 +130,7 @@ from tqdm import tqdm
 
 total_loss_acc_array = []
 
-epoch_num = 3
+epoch_num = 100
 count_batches = len(train_data_pre)
 for epoch in range(epoch_num):
     print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_num)))
@@ -142,7 +142,7 @@ for epoch in range(epoch_num):
         total_accuracy = total_accuracy + training_result[1].numpy()
     total_loss = total_loss / count_batches
     total_accuracy = total_accuracy / count_batches
-    total_loss_acc_array.append([float(epoch + 1.0), total_loss, total_accuracy])
+    total_loss_acc_array.append([epoch + 1, total_loss, total_accuracy])
     print("loss =", total_loss, " acc =", total_accuracy)
 
 # BLOCK #15
@@ -152,15 +152,16 @@ epoch_array = []
 loss_array = []
 acc_array = []
 for inx in range(len(total_loss_acc_array)):
-    epoch_array.append(total_loss_acc_array[inx][0])
-    loss_array.append(total_loss_acc_array[inx][1])
-    acc_array.append(total_loss_acc_array[inx][2])
+    epoch_array.append(float(total_loss_acc_array[inx][0]))
+    loss_array.append(float(total_loss_acc_array[inx][1]))
+    acc_array.append(float(total_loss_acc_array[inx][2]))
 
-plt.plot(epoch_array, loss_array, "loss")
-plt.plot(epoch_array, acc_array, "acc")
+plt.plot(epoch_array, loss_array, label="loss")
+plt.plot(epoch_array, acc_array, label="acc")
 plt.xlabel("epochs")
 plt.title("total loss and accuracy")
 
+plt.legend()
 plt.show()
 
 # BLOCK #16
