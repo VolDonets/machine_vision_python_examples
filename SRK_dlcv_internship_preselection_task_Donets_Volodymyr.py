@@ -57,13 +57,57 @@ def preprocessing_with_norm(data):
 
 
 # BLOCK #8
+import tensorflow_addons as tfa
+from random import seed
+from random import randint
+from random import random
+
+seed(1)
+
+
+def do_augmentation(image):
+    rand_augment_code = randint(0, 28)
+    angle = 0.2 * random()
+    shear = 0.15 * random()
+    if rand_augment_code < 4:
+        x = tf.image.random_flip_left_right(image)
+    elif rand_augment_code < 8:
+        x = tfa.image.rotate(image, angle, fill_mode="constant", fill_value=0)
+    elif rand_augment_code < 12:
+        x = tfa.image.rotate(image, -angle, fill_mode="constant", fill_value=0)
+    elif rand_augment_code < 16:
+        x = tfa.image.shear_x(image, shear)
+    elif rand_augment_code < 20:
+        x = tfa.image.shear_y(image, -shear)
+    elif rand_augment_code < 24:
+        x = tfa.image.shear_y(image, shear)
+    else:
+        x = tfa.image.shear_y(image, -shear)
+    return x
+
+
+def preprocessing_with_augmentaion(data):
+    x = do_augmentation(data["image"])
+    x = tf.reshape(x, [-1])
+    y = data["label"]
+    return x, y
+
+
+# BLOCK #8
 # pre-process the train and the test data
-train_data_pre = train_data.map(preprocessing_with_norm)
-test_data_pre = test_data.map(preprocessing_with_norm)
+train_data_pre_1 = train_data.map(preprocessing_with_augmentaion)
+train_data_pre_2 = train_data.map(preprocessing)
+train_data_pre = train_data_pre_1.concatenate(train_data_pre_2)
+
+test_data_pre = test_data.map(preprocessing)
 
 batch_size = 64
 train_data_pre = train_data_pre.batch(batch_size)
 test_data_pre = test_data_pre.batch(batch_size)
+
+print(train_data_pre)
+print(test_data_pre)
+
 
 
 # BLOCK #9
@@ -130,10 +174,10 @@ from tqdm import tqdm
 
 total_loss_acc_array = []
 
-epoch_num = 100
+epoch_count = 50
 count_batches = len(train_data_pre)
-for epoch in range(epoch_num):
-    print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_num)))
+for epoch in range(epoch_count):
+    print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_count)))
     total_loss = 0.0
     total_accuracy = 0.0
     for step, (x, y) in enumerate(tqdm(train_data_pre)):
@@ -152,9 +196,12 @@ epoch_array = []
 loss_array = []
 acc_array = []
 for inx in range(len(total_loss_acc_array)):
-    epoch_array.append(float(total_loss_acc_array[inx][0]))
-    loss_array.append(float(total_loss_acc_array[inx][1]))
-    acc_array.append(float(total_loss_acc_array[inx][2]))
+    epoch_array.append(total_loss_acc_array[inx][0])
+    loss_array.append(total_loss_acc_array[inx][1])
+    acc_array.append(total_loss_acc_array[inx][2])
+
+max_loss = max(loss_array)
+loss_array = loss_array / max_loss
 
 plt.plot(epoch_array, loss_array, label="loss")
 plt.plot(epoch_array, acc_array, label="acc")
