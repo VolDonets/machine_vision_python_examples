@@ -20,6 +20,7 @@ test_data = tfds.load("fashion_mnist", split="test")
 # give names of each in the dataset
 names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
 
+
 # BLOCK #4
 # import different stuff for plotting
 # from matplotlib import rcParams
@@ -54,8 +55,8 @@ train_data_pre = train_data.map(preprocessing)
 test_data_pre = test_data.map(preprocessing)
 
 batch_size = 64
-train_data_batch_pre = train_data_pre.batch(batch_size)
-test_data_batch_pre = test_data_pre.batch(batch_size)
+train_data_pre = train_data_pre.batch(batch_size)
+test_data_pre = test_data_pre.batch(batch_size)
 
 
 # BLOCK #8
@@ -98,19 +99,77 @@ def train_step(x, y):
 
     return loss, accuracy
 
-# BLOCK #11
+
+# BLOC #11
+import numpy as np
+
+x_test = np.concatenate([x for x, y in test_data_pre], axis=0)
+y_test = np.concatenate([y for x, y in test_data_pre], axis=0)
+
+
+# BLOCK #12
+def calc_acc():
+    pred = model.predict(x_test)
+    acc = np.sum(np.argmax(pred, axis=-1) == y_test) / len(y_test)
+    return acc
+
+# BLOCK #13
+print("Show initial accuracity")
+print("Test acc: ", calc_acc())
+
+# BLOCK #14
 from tqdm import tqdm
 
 epoch_num = 30
-count_batches = len(train_data_batch_pre)
+count_batches = len(train_data_pre)
 for epoch in range(epoch_num):
     print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_num)))
     total_loss = 0.0
     total_accuracy = 0.0
-    for step, (x, y) in enumerate(tqdm(train_data_batch_pre)):
+    for step, (x, y) in enumerate(tqdm(train_data_pre)):
         training_result = train_step(x, y)
         total_loss = total_loss + training_result[0].numpy()
         total_accuracy = total_accuracy + training_result[1].numpy()
     total_loss = total_loss / count_batches
     total_accuracy = total_accuracy / count_batches
     print("loss =", total_loss, " acc =", total_accuracy)
+
+# BLOCK #15
+print("\n\nShow last accuracity")
+print("Test acc: ", calc_acc())
+
+# BLOCK #16
+# from matplotlib import rcParams
+# from matplotlib import pyplot as plt
+#
+# rcParams["figure.figsize"] = [10, 10]
+# rcParams['xtick.labelbottom'] = False
+
+# BLOCK #17
+# finaly plot it on the
+# test_pred = model.predict(x_test)
+#
+# for idx, elem in enumerate(test_data.take(25)):
+#     pred_idx = np.argmax(test_pred[idx])
+#     true_idx = y_test[idx]
+#     plt.subplot(5, 5, idx + 1, title=(names[pred_idx] + "(" + names[true_idx] + ")"))
+#     plt.imshow(elem['image'][:, :, 0])
+
+# windows code
+# !!! WARNING it used in my win-system.
+# plt.show()
+
+# BLOCK 18
+from matplotlib import pyplot
+
+test_pred = model.predict(x_test)
+fig = pyplot.figure(figsize=(20, 8))
+
+for idx, elem in enumerate(test_data.take(32)):
+    ax = fig.add_subplot(4, 8, idx + 1, xticks=[], yticks=[])
+    ax.imshow(elem['image'][:, :, 0])
+    pred_idx = np.argmax(test_pred[idx])
+    true_idx = y_test[idx]
+    ax.set_title("{} ({})".format(names[pred_idx], names[true_idx]),
+                 color=("green" if pred_idx == true_idx else "red"))
+pyplot.show()
