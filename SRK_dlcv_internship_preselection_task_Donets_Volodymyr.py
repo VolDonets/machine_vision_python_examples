@@ -50,16 +50,23 @@ def preprocessing(data):
 
 
 # BLOCK #7
+def preprocessing_with_norm(data):
+    x = tf.reshape(data["image"], [-1]) / 255
+    y = data["label"]
+    return x, y
+
+
+# BLOCK #8
 # pre-process the train and the test data
-train_data_pre = train_data.map(preprocessing)
-test_data_pre = test_data.map(preprocessing)
+train_data_pre = train_data.map(preprocessing_with_norm)
+test_data_pre = test_data.map(preprocessing_with_norm)
 
 batch_size = 64
 train_data_pre = train_data_pre.batch(batch_size)
 test_data_pre = test_data_pre.batch(batch_size)
 
 
-# BLOCK #8
+# BLOCK #9
 # this function defines base model (!!!WARNING, in the task I can't modify it).
 # then it creates model and print model summary
 # Cause we have the input 28*28*1 (gray_scale) = 784 - here is an input layer
@@ -112,6 +119,7 @@ def calc_acc():
     pred = model.predict(x_test)
     acc = np.sum(np.argmax(pred, axis=-1) == y_test) / len(y_test)
     return acc
+
 
 # BLOCK #13
 print("Show initial accuracity")
