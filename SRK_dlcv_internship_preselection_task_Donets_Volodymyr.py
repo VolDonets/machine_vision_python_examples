@@ -14,7 +14,7 @@ test_data = tfds.load("fashion_mnist", split="test")
 
 # BLOCK #2.1
 # show an information about loaded dataset
-print(info)
+# print(info)
 
 # BLOCK #3
 # give names of each in the dataset
@@ -22,21 +22,21 @@ names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt
 
 # BLOCK #4
 # import different stuff for plotting
-from matplotlib import rcParams
-from matplotlib import pyplot as plt
-
-rcParams["figure.figsize"] = [10, 10]
-rcParams['xtick.labelbottom'] = False
+# from matplotlib import rcParams
+# from matplotlib import pyplot as plt
+#
+# rcParams["figure.figsize"] = [10, 10]
+# rcParams['xtick.labelbottom'] = False
 
 # BLOCK #5
 # finaly plot it on the
-for idx, elem in enumerate(train_data.take(25)):
-    plt.subplot(5, 5, idx + 1, title=names[elem['label'].numpy()])
-    plt.imshow(elem['image'][:, :, 0])
+# for idx, elem in enumerate(train_data.take(25)):
+#     plt.subplot(5, 5, idx + 1, title=names[elem['label'].numpy()])
+#     plt.imshow(elem['image'][:, :, 0])
 
 # windows code
 # !!! WARNING it used in my win-system.
-plt.show()
+# plt.show()
 
 
 # BLOCK #6
@@ -54,8 +54,8 @@ train_data_pre = train_data.map(preprocessing)
 test_data_pre = test_data.map(preprocessing)
 
 batch_size = 64
-train_data_pre = train_data_pre.batch(batch_size)
-test_data_pre = test_data_pre.batch(batch_size)
+train_data_batch_pre = train_data_pre.batch(batch_size)
+test_data_batch_pre = test_data_pre.batch(batch_size)
 
 
 # BLOCK #8
@@ -72,7 +72,7 @@ def base_model():
 
 
 model = base_model()
-model.summary()
+# model.summary()
 
 # BLOCK #10
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
@@ -92,13 +92,25 @@ def train_step(x, y):
 
         for v, w in zip(model.trainable_variables, new_weights):
             v.assign(w)
+    pred_nums = tf.math.argmax(pred, axis=1)
+    equality = tf.math.equal(pred_nums, y)
+    accuracy = tf.math.reduce_mean(tf.cast(equality, tf.float32))
 
+    return loss, accuracy
 
 # BLOCK #11
 from tqdm import tqdm
 
 epoch_num = 30
+count_batches = len(train_data_batch_pre)
 for epoch in range(epoch_num):
-    print("epoch {}:".format(epoch))
-    for step, (x, y) in enumerate(tqdm(train_data_pre)):
-        train_step(x, y)
+    print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_num)))
+    total_loss = 0.0
+    total_accuracy = 0.0
+    for step, (x, y) in enumerate(tqdm(train_data_batch_pre)):
+        training_result = train_step(x, y)
+        total_loss = total_loss + training_result[0].numpy()
+        total_accuracy = total_accuracy + training_result[1].numpy()
+    total_loss = total_loss / count_batches
+    total_accuracy = total_accuracy / count_batches
+    print("loss =", total_loss, " acc =", total_accuracy)
