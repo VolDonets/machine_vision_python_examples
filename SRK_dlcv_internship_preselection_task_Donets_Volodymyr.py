@@ -128,7 +128,9 @@ print("Test acc: ", calc_acc())
 # BLOCK #14
 from tqdm import tqdm
 
-epoch_num = 30
+total_loss_acc_array = []
+
+epoch_num = 3
 count_batches = len(train_data_pre)
 for epoch in range(epoch_num):
     print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_num)))
@@ -140,20 +142,39 @@ for epoch in range(epoch_num):
         total_accuracy = total_accuracy + training_result[1].numpy()
     total_loss = total_loss / count_batches
     total_accuracy = total_accuracy / count_batches
+    total_loss_acc_array.append([float(epoch + 1.0), total_loss, total_accuracy])
     print("loss =", total_loss, " acc =", total_accuracy)
 
 # BLOCK #15
+import matplotlib.pyplot as plt
+
+epoch_array = []
+loss_array = []
+acc_array = []
+for inx in range(len(total_loss_acc_array)):
+    epoch_array.append(total_loss_acc_array[inx][0])
+    loss_array.append(total_loss_acc_array[inx][1])
+    acc_array.append(total_loss_acc_array[inx][2])
+
+plt.plot(epoch_array, loss_array, "loss")
+plt.plot(epoch_array, acc_array, "acc")
+plt.xlabel("epochs")
+plt.title("total loss and accuracy")
+
+plt.show()
+
+# BLOCK #16
 print("\n\nShow last accuracity")
 print("Test acc: ", calc_acc())
 
-# BLOCK #16
+# BLOCK #17
 # from matplotlib import rcParams
 # from matplotlib import pyplot as plt
 #
 # rcParams["figure.figsize"] = [10, 10]
 # rcParams['xtick.labelbottom'] = False
 
-# BLOCK #17
+# BLOCK #18
 # finaly plot it on the
 # test_pred = model.predict(x_test)
 #
@@ -167,7 +188,7 @@ print("Test acc: ", calc_acc())
 # !!! WARNING it used in my win-system.
 # plt.show()
 
-# BLOCK 18
+# BLOCK 19
 from matplotlib import pyplot
 
 test_pred = model.predict(x_test)
