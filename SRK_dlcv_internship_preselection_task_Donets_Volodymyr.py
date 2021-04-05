@@ -93,21 +93,24 @@ def preprocessing_with_augmentaion(data):
     return x, y
 
 
+def preprocessing_with_aug_norm(data):
+    x = do_augmentation(data["image"])
+    x = tf.reshape(x, [-1]) / 255
+    y = data["label"]
+    return x, y
+
+
 # BLOCK #8
 # pre-process the train and the test data
-train_data_pre_1 = train_data.map(preprocessing_with_augmentaion)
-train_data_pre_2 = train_data.map(preprocessing)
+train_data_pre_1 = train_data.map(preprocessing_with_aug_norm)
+train_data_pre_2 = train_data.map(preprocessing_with_norm)
 train_data_pre = train_data_pre_1.concatenate(train_data_pre_2)
 
-test_data_pre = test_data.map(preprocessing)
+test_data_pre = test_data.map(preprocessing_with_norm)
 
 batch_size = 64
 train_data_pre = train_data_pre.batch(batch_size)
 test_data_pre = test_data_pre.batch(batch_size)
-
-print(train_data_pre)
-print(test_data_pre)
-
 
 
 # BLOCK #9
@@ -129,14 +132,36 @@ model = base_model()
 # BLOCK #10
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
+@tf.function
+def regularization_l1(trainable_variables, var_lambda=0.01):
+    reg = 0.0
+    for x in trainable_variables:
+        reg = reg + tf.math.reduce_sum(tf.math.abs(x))
+    return var_lambda * reg
 
 @tf.function
-def train_step(x, y):
-    lr = 0.0003
+def regularization_l2(trainable_variables, var_lambda=0.01):
+    reg = 0.0
+    for x in trainable_variables:
+        reg = reg + tf.math.reduce_sum(tf.math.square(x))
+    reg = tf.math.sqrt(reg)
+    return var_lambda * reg
+
+@tf.function
+def regularization_l1_l2(trainable_variables, var_lambda_l1=0.01, var_lambda_l2=0.01):
+    reg_l1 = regularization_l1(trainable_variables, var_lambda=var_lambda_l1)
+    reg_l2 = regularization_l2(trainable_variables, var_lambda=var_lambda_l2)
+    return reg_l1 + reg_l2
+
+
+
+@tf.function
+def train_step(x, y, lr=0.0005):
     with tf.GradientTape() as tape:
         pred = model(x)
         loss = loss_object(y, pred)
-        gradients = tape.gradient(loss, model.trainable_variables)
+        regl = regularization_l2(model.trainable_variables)
+        gradients = tape.gradient(loss + regl, model.trainable_variables)
 
         new_weights = []
         for w, grad in zip(model.trainable_variables, gradients):
@@ -170,6 +195,19 @@ print("Show initial accuracity")
 print("Test acc: ", calc_acc())
 
 # BLOCK #14
+def schedule_lr(epoch_count, epoch):
+    if epoch < epoch_count / 5:
+        return 0.001
+    elif epoch < 2 * epoch_count / 5:
+        return 0.0009
+    elif epoch < 3 * epoch_count / 5:
+        return 0.0007
+    elif epoch < 4 * epoch_count / 5:
+        return 0.0008
+    else:
+        return 0.0005
+
+# BLOCK #14
 from tqdm import tqdm
 
 total_loss_acc_array = []
@@ -177,11 +215,12 @@ total_loss_acc_array = []
 epoch_count = 50
 count_batches = len(train_data_pre)
 for epoch in range(epoch_count):
-    print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_count)))
+    lr = schedule_lr(epoch_count, epoch)
     total_loss = 0.0
     total_accuracy = 0.0
+    print("\nEpoch {}:".format(str(epoch + 1) + "/" + str(epoch_count)))
     for step, (x, y) in enumerate(tqdm(train_data_pre)):
-        training_result = train_step(x, y)
+        training_result = train_step(x, y, lr=lr)
         total_loss = total_loss + training_result[0].numpy()
         total_accuracy = total_accuracy + training_result[1].numpy()
     total_loss = total_loss / count_batches
